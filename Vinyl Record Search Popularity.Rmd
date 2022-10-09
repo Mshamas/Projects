@@ -1,0 +1,52 @@
+---
+title: "Vinyl Record Popularity Over Time"
+output: html_notebook
+---
+#Firstly, I started with activating packages that I will use.
+```{r}
+library(gtrendsR)
+library(ggplot2)
+```
+
+#Next, I imported and cleaned my data. My first analysis was for vinyl record search popularity worldwide from 2014-2022.
+```{r}
+google.trends = gtrends(c("vinyl.record"), gprop = "web", time = "all")[[1]]
+google.trends = dcast(google.trends, date ~ keyword + geo, value.var = "hits")
+```
+
+#Next, I explored the data.
+```{r}
+head(google.trends) #top rows
+summary(google.trends) #column summaries
+str(google.trends) #structure of the dataset
+```
+#Next, I plotted the data.
+```{r}
+ggplot(google.trends, aes(x=date)) + geom_line(aes(y= vinyl.record_world))+
+  xlab("Year")+
+  ylab("Num of searches")+
+  ggtitle("Vinyl Record Popularity Over Time- Worldwide")
+```
+
+#Vinyl record searches have greatly reduced over the years with them peaking in late 2004. Next, I was interested in vinyl record searches categorized by country. I chose 2 of the biggest music markets in the world: USA and UK; to also get a comparison for popularity in different continents. Then, I imported and cleaned the new data.
+```{r}
+google.trends.country = gtrends(c("vinyl.record"), geo = c("US", "GB"), gprop = "web", time = "all")[[1]]
+google.trends.country = dcast(google.trends.country, date ~ keyword+ geo, value.var = "hits")
+```
+
+#Next, I explored the data.
+```{r}
+head(google.trends.country) #top rows
+summary(google.trends.country) #column summaries
+str(google.trends.country) #structure of the dataset
+```
+#Next, I plotted the data.
+```{r}
+ggplot(google.trends.country,aes(x=date)) +       geom_line(aes(y= vinyl.record_US), colour="Blue")+
+  geom_line(aes(y=vinyl.record_GB), colour="Red")+
+  xlab("Year")+
+  ylab("Num of searches")+
+  ggtitle("Vinyl Record Popularity Over Time- US vs. UK")
+```
+
+#Vinyl record searches are more prevalant in the UK over the last few years compared to the US. Great R beginner project!
