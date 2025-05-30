@@ -1,9 +1,0 @@
-!pip install poetry
-
-poetry init
-
-poetry add requirements.txt
-
-poetry install
-
-poetry shell
