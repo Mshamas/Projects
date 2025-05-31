@@ -277,16 +277,6 @@ Tech Stack: Apache Kafka, MLflow, Azure ML, VS Code, Poetry, AutoGluon, H2O, PyC
 - **Scalability and Optimization:** Performance tests, scalability checks.
 - **Feedback Loop:** Integrated feedback for continuous improvement.
 
-
-
-#### 13. Branches: 
-1. Main: For Final Product [Owner - Team]
-2. Experiments: For ML Experiments and tracking [Owners - Arham, Krishan]
-3. ArchDevelopment: For CICD  [Owner - Nandani]
-4. Streamlit: For front end [Owner - Nandani]
-5. Data Engineering: For Kafka Streaming [Owner- Yash]
-6. Backup: For Backup [Owner - Aasna, Mahrukh]
-
    
 ### Technologies Used
 
