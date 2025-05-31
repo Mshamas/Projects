@@ -1,0 +1,238 @@
+---
+title: "R Notebook"
+output: md_document
+---
+
+
+### load Packages
+```{r}
+library(tidyverse)
+library(arrow)
+library(tidyverse)
+library(lubridate)
+library(gender)
+library(igraph)
+library(dplyr)
+```
+
+### Load Data
+```{r}
+applications <- read_csv("/Users/kaz/Desktop/Final Project_org/Data/closest_dock_events.csv")
+```
+
+```{r}
+str(applications)
+```
+
+
+### Add Start Year
+```{r}
+applications <- applications %>%
+  mutate(
+    start_year = year(earliest_date)
+  )
+```
+
+### Remove the NA value
+```{r}
+applications <- applications %>%
+  filter(!is.na(processing_time ))
+```
+
+
+
+#### Change the date format
+```{r}
+applications$gender <- as.factor(applications$gender)
+applications$race <- as.factor(applications$race)
+# applications$examiner_art_unit <- as.factor(applications$examiner_art_unit)
+applications$workgroup <- as.factor(applications$workgroup)
+applications$start_year <- as.factor(applications$start_year)
+applications$disposal_type <- as.factor(applications$disposal_type)
+applications$uspc_class <- as.factor(applications$uspc_class)
+```
+
+
+```{r}
+# distribution of processing time numeric it first
+
+applications$processing_time <- as.numeric(applications$processing_time)
+applications$ln_processing_time <- log(applications$processing_time)
+```
+
+
+
+
+### Model Building
+```{r}
+library(caTools)
+library(MASS)
+library(lmtest)
+
+```
+
+
+
+
+```{r}
+set.seed(123)  # for reproducibility
+split <- sample.split(applications$processing_time, SplitRatio = 0.8)
+train_data <- subset(applications, split == TRUE)
+test_data <- subset(applications, split == FALSE)
+
+```
+
+
+### Dealing with NA
+```{r}
+# Remove rows with any missing value
+train_data <- na.omit(train_data)
+test_data <- na.omit(test_data)
+
+
+```
+
+
+```{r}
+# model <- lm(processing_time ~  gender + race + experience + in_degree + out_degree + betweenness + disposal_type + sequence_diff + advice_count_final + start_year + workgroup,
+#             data = train_data)
+
+model <- lm(processing_time ~  gender + race + experience + in_degree + out_degree + betweenness + disposal_type  + advice_count_final + start_year + workgroup,
+            data = train_data)
+
+model2 <- lm(processing_time ~ gender * in_degree + gender * out_degree + gender * betweenness +
+        race * in_degree + race * out_degree + race * betweenness +
+        experience + disposal_type + advice_count_final + start_year + workgroup,
+            data = train_data)
+
+# model <- lm(avg_processing_time ~  gender + race + experience + in_degree + out_degree + betweenness + disposal_type + sequence_diff + advice_count_final + start_year + workgroup,
+#             data = applications)
+```
+
+```{r}
+library(stargazer)
+# Using stargazer to generate an HTML table of the model summary
+summary(model)
+```
+
+
+
+```{r}
+summary(model2)
+
+```
+
+
+### effect size
+```{r}
+
+# Standardizing only continuous variables
+continuous_vars <- c("in_degree", "out_degree", "betweenness", "experience", "advice_count_final")
+train_data[continuous_vars] <- scale(train_data[continuous_vars])
+
+# Model fitting remains the same
+model2_standardized <- lm(processing_time ~ gender * in_degree + gender * out_degree + gender * betweenness +
+  race * in_degree + race * out_degree + race * betweenness +
+  experience + disposal_type + advice_count_final + start_year + workgroup,
+                          data = train_data)
+
+summary(model2_standardized)
+
+```
+
+```{r}
+```
+
+
+### Check the multicolinarity
+```{r}
+library(car)
+vif_values <- vif(model)
+print(vif_values)
+
+```
+
+
+
+### Check Homoskedasticity and  No Auto Correlation
+```{r}
+# Plotting residuals
+residuals <- resid(model)
+fitted_values <- fitted(model)
+plot(fitted_values, residuals, main = "Residuals vs. Fitted", xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, col = "red")
+
+# Durbin-Watson test
+library(lmtest)
+dwtest(model)
+```
+
+Durbin-Watson test
+
+data:  model
+DW = 1.9397, p-value = 0.0008913
+alternative hypothesis: true autocorrelation is greater than 0
+
+
+
+
+
+
+### Normality of Residuals
+```{r}
+qqnorm(residuals, main = "Q-Q Plot of Residuals")
+qqline(residuals, col = "red")
+```
+
+
+
+```{r}
+predictions <- predict(model, newdata = test_data)
+residuals <- test_data$processing_time - predictions
+RMSE <- sqrt(mean(residuals^2))
+print(paste("RMSE:", RMSE))
+```
+
+
+### Random Forest
+
+```{r}
+library(randomForest)
+library(caret)
+```
+
+
+
+
+```{r}
+# Train a random forest model
+rf_model <- randomForest(processing_time ~  gender + race + experience + in_degree + out_degree + betweenness + disposal_type  + advice_count_final + start_year + workgroup , data = train_data, ntree = 500, mtry = 4, importance = TRUE)
+
+```
+```{r}
+# Predict using the test data
+predictions <- predict(rf_model, newdata = test_data)
+
+# Calculate MSE and RMSE
+mse <- mean((predictions - test_data$processing_time)^2)
+rmse <- sqrt(mse)
+
+print(paste("MSE:", mse))
+print(paste("RMSE:", rmse))
+
+```
+
+```{r}
+# Get variable importance
+importance <- importance(rf_model)
+print(importance)
+
+# Plot variable importance
+varImpPlot(rf_model)
+
+```
+
+
+
+
+
